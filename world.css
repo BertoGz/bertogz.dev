@@ -62,19 +62,23 @@ img { display: block; max-width: 100%; height: auto; }
   grid-template-columns: minmax(0, 1fr) var(--side);
   grid-template-rows: minmax(0, 1fr) var(--log);
 }
-.world.no-log { grid-template-rows: minmax(0, 1fr); }
 .world.no-log .log { display: none; }
-.world.no-log .side { grid-row: 1 / -1; }
 
-.world.panel-left { grid-template-columns: var(--side) minmax(0, 1fr); }
-.world.panel-left .side {
-  grid-area: 1 / 1 / -1 / 1;
-  border-left: 0;
-  border-right: 2px solid var(--iron);
-  box-shadow: inset -2px 0 0 var(--bronze), inset 0 0 46px rgba(112, 72, 24, 0.28);
+/* Desktop only: the phone sheet layout below has its own grid. */
+@media (min-width: 861px) and (min-height: 521px), (min-width: 861px) and (orientation: portrait) {
+  .world.no-log { grid-template-rows: minmax(0, 1fr); }
+  .world.no-log .side { grid-row: 1 / -1; }
+
+  .world.panel-left { grid-template-columns: var(--side) minmax(0, 1fr); }
+  .world.panel-left .side {
+    grid-area: 1 / 1 / -1 / 1;
+    border-left: 0;
+    border-right: 2px solid var(--iron);
+    box-shadow: inset -2px 0 0 var(--bronze), inset 0 0 46px rgba(112, 72, 24, 0.28);
+  }
+  .world.panel-left .stage { grid-area: 1 / 2; }
+  .world.panel-left .log { grid-area: 2 / 2; }
 }
-.world.panel-left .stage { grid-area: 1 / 2; }
-.world.panel-left .log { grid-area: 2 / 2; }
 
 .stage { grid-area: 1 / 1; position: relative; overflow: hidden; min-height: 0; }
 #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; image-rendering: pixelated; }
@@ -241,7 +245,7 @@ img { display: block; max-width: 100%; height: auto; }
   /* The sheet is only as tall as what's in it, up to a compact limit. */
   .side {
     position: fixed; z-index: 10; left: 0; right: 0; bottom: var(--dock);
-    height: auto; max-height: min(40dvh, 360px);
+    height: auto; max-height: min(50dvh, 450px);
     padding-top: 6px;
     border-left: 0; border-top: 2px solid var(--iron);
     box-shadow: inset 0 2px 0 var(--bronze), inset 0 0 36px rgba(112, 72, 24, 0.24);
@@ -261,7 +265,7 @@ img { display: block; max-width: 100%; height: auto; }
 
   .close-sheet {
     display: flex; align-items: center; justify-content: center; flex: none;
-    position: absolute; right: 4px; top: 6px; z-index: 2;
+    position: absolute; right: 4px; top: 6px; z-index: 3;
     width: 44px; height: 44px; font-size: 30px; line-height: 1; color: var(--ink-soft);
   }
   .panel { flex: 0 1 auto; padding: 0 16px 14px; }
@@ -294,7 +298,7 @@ img { display: block; max-width: 100%; height: auto; }
   #mini { width: 76px; height: 76px; }
   .side {
     left: auto; right: 0; bottom: var(--dock);
-    width: min(44vw, 360px); max-height: calc(100dvh - var(--dock));
+    width: min(55vw, 450px); max-height: calc(100dvh - var(--dock));
     border-top: 0; border-left: 2px solid var(--iron);
     box-shadow: inset 2px 0 0 var(--bronze), inset 0 0 36px rgba(112, 72, 24, 0.24);
     transform: translateX(100%);

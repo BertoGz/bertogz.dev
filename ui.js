@@ -368,6 +368,9 @@
     console.warn(error);
   }
 
+  // Opening in the same tick the world is created leaves the canvas blank; wait one frame.
+  if (sheetQuery.matches) requestAnimationFrame(() => openSheet(true));
+
   sheetQuery.addEventListener("change", () => refreshChrome());
   window.addEventListener("resize", syncInsets);
 
