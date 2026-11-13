@@ -83,7 +83,7 @@ img { display: block; max-width: 100%; height: auto; }
 .stage { grid-area: 1 / 1; position: relative; overflow: hidden; min-height: 0; }
 #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; image-rendering: pixelated; }
 
-.action, #mini, .tag { z-index: 1; }
+.action, #mini, .tag, .bgm-mute { z-index: 1; }
 
 .about-portrait {
   width: min(100%, 200px);
@@ -112,6 +112,22 @@ img { display: block; max-width: 100%; height: auto; }
   font: 15px/1 var(--pixel-small); color: #fff; text-shadow: 1px 1px 0 #000;
   pointer-events: none; white-space: nowrap;
 }
+
+.bgm-mute {
+  position: absolute;
+  right: calc(18px + var(--play-right, 0px));
+  bottom: calc(14px + var(--play-bottom, 0px));
+  z-index: 2;
+  width: 44px; height: 44px; padding: 0;
+  display: grid; place-items: center;
+  color: #fff; background: rgba(13, 22, 38, 0.78);
+  border: 2px solid var(--bronze);
+  box-shadow: 0 0 0 2px var(--iron);
+  cursor: pointer;
+}
+.bgm-mute[hidden] { display: none; }
+.bgm-mute svg { width: 22px; height: 22px; display: block; }
+.bgm-mute[aria-pressed="true"] { color: #c8b8a0; }
 
 .log {
   grid-area: 2 / 1;
@@ -220,7 +236,7 @@ img { display: block; max-width: 100%; height: auto; }
 .menu em { font-style: normal; color: var(--crimson); }
 
 /* Without WebGL the world is hidden and the panel carries the page. */
-.no-webgl .stage canvas, .no-webgl .tag, .no-webgl .action { display: none; }
+.no-webgl .stage canvas, .no-webgl .tag, .no-webgl .action, .no-webgl .bgm-mute { display: none; }
 
 /* Phones and small tablets: the world fills the screen and the panel is a sheet */
 @media (max-width: 860px), (max-height: 520px) and (orientation: landscape) {
@@ -231,6 +247,11 @@ img { display: block; max-width: 100%; height: auto; }
   .action { display: none; }
 
   #mini { right: 14px; top: calc(14px + env(safe-area-inset-top)); width: 92px; height: 92px; }
+  .bgm-mute {
+    right: calc(12px + var(--play-right, 0px));
+    bottom: calc(12px + var(--play-bottom, 0px));
+    width: 48px; height: 48px;
+  }
 
   .log {
     grid-area: 1 / 1; align-self: end; z-index: 2;

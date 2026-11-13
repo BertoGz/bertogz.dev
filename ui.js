@@ -149,7 +149,7 @@
       <img class="about-portrait" src="${AVATAR}" alt="" width="200" height="200" decoding="async">
       <h2>Berto Gonzalez</h2>
       <p class="about-role">Software engineer</p>
-      <p>Full-stack systems and interface Engineer specializing in bridging real-time backend architecture with high-reliability user interfaces across web, mobile, and desktop environments</p>
+      <p>Greetings! I have a background in fullstack web and mobile engineering. I'm also a hobbyist game dev at heart. Whether I'm building production software or tinkering with godot, I love solving problems systemically and I'm genuinely driven by learning how things work.<br><br>Have a look around and get to know some of my projects.</p>
       <ul class="about-links">
         <li><a href="https://github.com/BertoGz" target="_blank" rel="noopener">GitHub</a></li>
         <li><a href="https://www.linkedin.com/in/berto-gonzalez-7b463b1aa/" target="_blank" rel="noopener">LinkedIn</a></li>
@@ -169,8 +169,12 @@
   const landmarkById = (id) => W.landmarks.find((l) => l.id === id);
 
   function syncInsets() {
-    if (!world) return;
     const open = sheetQuery.matches && root.classList.contains("sheet-open");
+    const playRight = open && landscapeQuery.matches ? side.offsetWidth : 0;
+    const playBottom = open && !landscapeQuery.matches ? side.offsetHeight : 0;
+    root.style.setProperty("--play-right", `${playRight}px`);
+    root.style.setProperty("--play-bottom", `${playBottom}px`);
+    if (!world) return;
     if (!open) world.setInset(0, 0);
     else if (landscapeQuery.matches) world.setInset(side.offsetWidth, 0);
     else world.setInset(0, side.offsetHeight);
@@ -373,6 +377,113 @@
 
   sheetQuery.addEventListener("change", () => refreshChrome());
   window.addEventListener("resize", syncInsets);
+
+  const BGM_GAP_MS = 60_000;
+  const BGM_MUTE_KEY = "bgm-muted";
+  const bgmBtn = $("bgm-mute");
+  const bgm = new Audio(rootAsset("assets/bg-music.mp3"));
+  bgm.preload = "auto";
+  bgm.volume = 0.7;
+  let bgmGapTimer = null;
+  let bgmGapEndsAt = 0;
+  let bgmUnlocked = false;
+  let bgmPlayPending = false;
+  let bgmMuted = localStorage.getItem(BGM_MUTE_KEY) === "1";
+
+  const speakerIcon = (muted) => muted
+    ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 4V5L7 9H3zm13.6 3 2.1-2.1 1.4 1.4L18 13.4l2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1-2.1-2.1 1.4-1.4 2.1 2.1z"/></svg>`
+    : `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 4V5L7 9H3zm11.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zm0-8.5v2.1a6.5 6.5 0 0 1 0 12.8v2.1a8.5 8.5 0 0 0 0-17z"/></svg>`;
+
+  const paintBgmBtn = () => {
+    if (!bgmBtn) return;
+    bgmBtn.innerHTML = speakerIcon(bgmMuted);
+    bgmBtn.setAttribute("aria-pressed", bgmMuted ? "true" : "false");
+    bgmBtn.setAttribute("aria-label", bgmMuted ? "Unmute music" : "Mute music");
+  };
+
+  const clearBgmGap = () => {
+    if (bgmGapTimer) clearTimeout(bgmGapTimer);
+    bgmGapTimer = null;
+  };
+
+  const scheduleBgmGap = () => {
+    clearBgmGap();
+    if (!bgmGapEndsAt) bgmGapEndsAt = Date.now() + BGM_GAP_MS;
+    const wait = Math.max(0, bgmGapEndsAt - Date.now());
+    bgmGapTimer = setTimeout(() => {
+      bgmGapTimer = null;
+      bgmGapEndsAt = 0;
+      if (bgmMuted) return;
+      bgm.currentTime = 0;
+      bgm.play().catch(() => {});
+    }, wait);
+  };
+
+  const unlockBgm = () => {
+    if (bgmUnlocked || bgmMuted || bgmPlayPending) return;
+    bgmPlayPending = true;
+    const playAttempt = bgm.play();
+    if (!playAttempt) {
+      bgmPlayPending = false;
+      return;
+    }
+    playAttempt
+      .then(() => {
+        bgmPlayPending = false;
+        bgmUnlocked = true;
+      })
+      .catch(() => {
+        bgmPlayPending = false;
+      });
+  };
+
+  const setBgmMuted = (muted) => {
+    bgmMuted = muted;
+    try { localStorage.setItem(BGM_MUTE_KEY, muted ? "1" : "0"); } catch { /* private mode */ }
+    paintBgmBtn();
+    if (muted) {
+      bgm.pause();
+      return;
+    }
+    if (bgmGapEndsAt) {
+      scheduleBgmGap();
+      return;
+    }
+    if (bgmUnlocked || bgm.currentTime > 0) {
+      bgmUnlocked = true;
+      bgm.play().catch(() => {});
+    }
+  };
+
+  bgm.addEventListener("error", () => {
+    console.warn("Background music failed to load:", bgm.src, bgm.error);
+  });
+
+  bgm.addEventListener("ended", () => {
+    bgmGapEndsAt = Date.now() + BGM_GAP_MS;
+    if (!bgmMuted) scheduleBgmGap();
+  });
+
+  paintBgmBtn();
+  bgmBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setBgmMuted(!bgmMuted);
+  });
+
+  document.addEventListener("pointerdown", () => {
+    if (bgmBtn) bgmBtn.hidden = false;
+  }, { capture: true, once: true });
+
+  const onBgmGesture = (e) => {
+    if (e.target.closest?.("#bgm-mute")) return;
+    unlockBgm();
+  };
+  document.addEventListener("pointerup", onBgmGesture, true);
+  document.addEventListener("keydown", onBgmGesture, true);
+  bgm.addEventListener("playing", () => {
+    document.removeEventListener("pointerup", onBgmGesture, true);
+    document.removeEventListener("keydown", onBgmGesture, true);
+  }, { once: true });
 
   log("Welcome. Walk the island: each landmark is a project.");
   log(sheetQuery.matches ? "Tap the ground to walk. Tap a landmark to open it." : "Click the ground to walk, click a landmark to open it. Right-click for options.");
