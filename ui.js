@@ -379,16 +379,14 @@
   window.addEventListener("resize", syncInsets);
 
   const BGM_GAP_MS = 60_000;
-  const BGM_MUTE_KEY = "bgm-muted";
   const bgmBtn = $("bgm-mute");
   const bgm = new Audio(rootAsset("assets/bg-music.mp3"));
   bgm.preload = "auto";
   bgm.volume = 0.7;
   let bgmGapTimer = null;
   let bgmGapEndsAt = 0;
-  let bgmUnlocked = false;
-  let bgmPlayPending = false;
-  let bgmMuted = localStorage.getItem(BGM_MUTE_KEY) === "1";
+  let bgmEverStarted = false;
+  let bgmMuted = true;
 
   const speakerIcon = (muted) => muted
     ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 4V5L7 9H3zm13.6 3 2.1-2.1 1.4 1.4L18 13.4l2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1-2.1-2.1 1.4-1.4 2.1 2.1z"/></svg>`
@@ -419,40 +417,25 @@
     }, wait);
   };
 
-  const unlockBgm = () => {
-    if (bgmUnlocked || bgmMuted || bgmPlayPending) return;
-    bgmPlayPending = true;
-    const playAttempt = bgm.play();
-    if (!playAttempt) {
-      bgmPlayPending = false;
-      return;
-    }
-    playAttempt
-      .then(() => {
-        bgmPlayPending = false;
-        bgmUnlocked = true;
-      })
-      .catch(() => {
-        bgmPlayPending = false;
-      });
-  };
-
   const setBgmMuted = (muted) => {
     bgmMuted = muted;
-    try { localStorage.setItem(BGM_MUTE_KEY, muted ? "1" : "0"); } catch { /* private mode */ }
     paintBgmBtn();
     if (muted) {
       bgm.pause();
+      return;
+    }
+    if (!bgmEverStarted) {
+      bgmEverStarted = true;
+      bgm.currentTime = 0;
+      bgm.play().catch(() => {});
       return;
     }
     if (bgmGapEndsAt) {
       scheduleBgmGap();
       return;
     }
-    if (bgmUnlocked || bgm.currentTime > 0) {
-      bgmUnlocked = true;
-      bgm.play().catch(() => {});
-    }
+    if (bgm.ended) bgm.currentTime = 0;
+    bgm.play().catch(() => {});
   };
 
   bgm.addEventListener("error", () => {
@@ -469,21 +452,6 @@
     e.stopPropagation();
     setBgmMuted(!bgmMuted);
   });
-
-  document.addEventListener("pointerdown", () => {
-    if (bgmBtn) bgmBtn.hidden = false;
-  }, { capture: true, once: true });
-
-  const onBgmGesture = (e) => {
-    if (e.target.closest?.("#bgm-mute")) return;
-    unlockBgm();
-  };
-  document.addEventListener("pointerup", onBgmGesture, true);
-  document.addEventListener("keydown", onBgmGesture, true);
-  bgm.addEventListener("playing", () => {
-    document.removeEventListener("pointerup", onBgmGesture, true);
-    document.removeEventListener("keydown", onBgmGesture, true);
-  }, { once: true });
 
   log("Welcome. Walk the island: each landmark is a project.");
   log(sheetQuery.matches ? "Tap the ground to walk. Tap a landmark to open it." : "Click the ground to walk, click a landmark to open it. Right-click for options.");
